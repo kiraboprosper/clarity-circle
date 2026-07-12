@@ -22,7 +22,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative flex items-center">
           {leftElement && (
-            <div className="absolute left-3 flex items-center pointer-events-none" style={{ color: "var(--text-muted)" }}>
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none" style={{ color: "var(--text-muted)" }}>
               {leftElement}
             </div>
           )}
@@ -31,15 +31,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             className={cn(
               "input-base",
-              leftElement && "pl-10",
-              rightElement && "pr-10",
+              leftElement && "pl-14",
+              rightElement && "pr-14",
               error && "border-red-400 focus:border-red-400 focus:shadow-red-100",
               className
             )}
             {...props}
           />
           {rightElement && (
-            <div className="absolute right-3 flex items-center" style={{ color: "var(--text-muted)" }}>
+            <div className="absolute inset-y-0 right-3 flex items-center" style={{ color: "var(--text-muted)" }}>
               {rightElement}
             </div>
           )}

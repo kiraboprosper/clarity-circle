@@ -1,10 +1,9 @@
-import {
+﻿import {
   collection, addDoc, doc, updateDoc, getDocs, onSnapshot,
-  query, where, orderBy, serverTimestamp, increment, arrayUnion,
+  query, where, orderBy, serverTimestamp, increment,
   limit, type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./config";
-import { COLLECTIONS } from "./collections";
 import type { Conversation, Message, UserProfile } from "../types";
 
 export async function getOrCreateDirectConversation(
@@ -104,3 +103,5 @@ export async function markConversationRead(conversationId: string, userId: strin
     [`unreadCounts.${userId}`]: 0,
   });
 }
+
+

@@ -3,7 +3,7 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 import { Loader2 } from "lucide-react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger" | "blossom";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "blossom" | "link";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -20,6 +20,7 @@ const variantStyles: Record<Variant, string> = {
   ghost:     "btn-ghost",
   danger:    "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl font-medium text-sm transition-all duration-200 bg-red-500 hover:bg-red-600 text-white",
   blossom:   "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl font-medium text-sm transition-all duration-200 bg-gradient-to-r from-blossom-400 to-blossom-500 text-white shadow-bloom hover:-translate-y-0.5 hover:shadow-lg",
+  link:      "inline-flex items-center justify-center gap-2 text-sm text-lavender-600 hover:text-lavender-700",
 };
 
 const sizeStyles: Record<Size, string> = {

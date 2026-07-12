@@ -16,7 +16,7 @@ import { getOrCreateDirectConversation } from "@/lib/firebase/chat";
 import { timeAgo, formatDate, GROWTH_STAGE_LABELS, GROWTH_STAGE_EMOJIS, xpToNextLevel, formatPoints } from "@/lib/utils/format";
 import type { UserProfile, Post } from "@/lib/types";
 
-const SUBSCRIPTION_LABELS = { free: "Free", clarity_plus: "Clarity Circle+", family: "Family", business: "Business" };
+const SUBSCRIPTION_LABELS = { free: "Free", pro: "Pro", business: "Business" } as const;
 
 export default function ProfilePage() {
   const { uid } = useParams<{ uid: string }>();
@@ -240,4 +240,5 @@ function ProfileSkeleton() {
     </div>
   );
 }
+
 

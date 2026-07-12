@@ -1,0 +1,40 @@
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
+
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    secret: FIREBASE_API_KEY_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    secret: FIREBASE_AUTH_DOMAIN_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    secret: FIREBASE_PROJECT_ID_SECRET
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    secret: FIREBASE_STORAGE_BUCKET_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    secret: FIREBASE_MESSAGING_SENDER_ID_SECRET
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    secret: FIREBASE_APP_ID_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_REVENUECAT_API_KEY
+    secret: REVENUECAT_API_KEY_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+
+# Build and runtime settings. The App Hosting build will use the project's Dockerfile
+# to build a container that runs the Next.js app using `next start`.

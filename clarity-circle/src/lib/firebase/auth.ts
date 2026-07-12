@@ -1,4 +1,4 @@
-import {
+﻿import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -11,6 +11,7 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "./config";
 import { COLLECTIONS } from "./collections";
+import { awardPointsSecure } from "./functions";
 import type { UserProfile } from "../types";
 
 const googleProvider = new GoogleAuthProvider();
@@ -25,6 +26,7 @@ export async function signUpWithEmail(
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(credential.user, { displayName });
   await createUserDocument(credential.user, { displayName, username, age });
+  await awardPointsSecure({ amount: 50, type: "account_created", description: "Welcome to Clarity Circle" });
   return credential.user;
 }
 
@@ -43,6 +45,7 @@ export async function signInWithGoogle(): Promise<User> {
       username: generateUsername(credential.user.displayName || "user"),
       age: null,
     });
+    await awardPointsSecure({ amount: 50, type: "account_created", description: "Welcome to Clarity Circle" });
   }
   return credential.user;
 }
@@ -60,7 +63,7 @@ async function createUserDocument(
   extras: { displayName: string; username: string; age: number | null }
 ): Promise<void> {
   const ref = doc(db, COLLECTIONS.USERS, user.uid);
-  const profile: Partial<UserProfile> = {
+  const profile: Omit<UserProfile, "joinedAt" | "lastActiveAt"> & { joinedAt: unknown; lastActiveAt: unknown } = {
     uid: user.uid,
     email: user.email || "",
     displayName: extras.displayName,
@@ -70,7 +73,7 @@ async function createUserDocument(
     role: "user",
     subscriptionTier: "free",
     subscriptionExpiry: null,
-    points: 50,
+    points: 0,
     level: 1,
     xp: 0,
     growthStage: "seed",
@@ -94,34 +97,20 @@ async function createUserDocument(
     },
     age: extras.age,
     ageVerified: extras.age !== null,
-    joinedAt: serverTimestamp() as any,
-    lastActiveAt: serverTimestamp() as any,
+    joinedAt: serverTimestamp(),
+    lastActiveAt: serverTimestamp(),
   };
   await setDoc(ref, profile);
-
-  // Award account creation points
-  await awardPoints(user.uid, 50, "account_created", "Welcome to Clarity Circle!");
 }
 
 export async function awardPoints(
-  userId: string,
+  _userId: string,
   amount: number,
-  type: string,
+  type: "account_created" | "onboarding_completed" | "daily_login" | "habit_completed" | "helpful_comment" | "post_created" | "challenge_completed",
   description: string,
   referenceId?: string
 ): Promise<void> {
-  const { doc: firestoreDoc, collection, addDoc, increment, updateDoc } = await import("firebase/firestore");
-  const txRef = collection(db, COLLECTIONS.POINTS);
-  await addDoc(txRef, {
-    userId,
-    amount,
-    type,
-    description,
-    referenceId: referenceId || null,
-    createdAt: serverTimestamp(),
-  });
-  const userRef = firestoreDoc(db, COLLECTIONS.USERS, userId);
-  await updateDoc(userRef, { points: increment(amount) });
+  await awardPointsSecure({ amount, type, description, referenceId: referenceId || null });
 }
 
 function generateUsername(displayName: string): string {

@@ -1,10 +1,11 @@
-import {
+﻿import {
   doc, getDoc, updateDoc, collection,
-  query, where, getDocs, orderBy, limit,
+  query, where, getDocs, limit,
   serverTimestamp, increment, setDoc,
 } from "firebase/firestore";
 import { db } from "./config";
 import { COLLECTIONS } from "./collections";
+import { awardPointsSecure } from "./functions";
 import type { UserProfile } from "../types";
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
@@ -14,7 +15,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
 export async function updateUserProfile(
   uid: string,
-  data: Partial<Omit<UserProfile, "uid" | "email" | "joinedAt">>
+  data: Partial<Pick<UserProfile, "displayName" | "bio" | "photoURL" | "isPrivate" | "theme" | "notificationSettings" | "onboardingCompleted" | "blockedUsers">>
 ): Promise<void> {
   await updateDoc(doc(db, COLLECTIONS.USERS, uid), {
     ...data,
@@ -23,11 +24,7 @@ export async function updateUserProfile(
 }
 
 export async function getUserByUsername(username: string): Promise<UserProfile | null> {
-  const q = query(
-    collection(db, COLLECTIONS.USERS),
-    where("username", "==", username),
-    limit(1)
-  );
+  const q = query(collection(db, COLLECTIONS.USERS), where("username", "==", username), limit(1));
   const snap = await getDocs(q);
   if (snap.empty) return null;
   return snap.docs[0].data() as UserProfile;
@@ -69,8 +66,7 @@ export async function recordDailyLogin(uid: string): Promise<void> {
   const snap = await getDoc(loginRef);
   if (!snap.exists()) {
     await setDoc(loginRef, { date: today, recordedAt: serverTimestamp() });
-    const { awardPoints } = await import("./auth");
-    await awardPoints(uid, 5, "daily_login", "Daily login bonus");
+    await awardPointsSecure({ amount: 5, type: "daily_login", description: "Daily login bonus", referenceId: today });
     await updateDoc(doc(db, COLLECTIONS.USERS, uid), { lastActiveAt: serverTimestamp() });
   }
 }

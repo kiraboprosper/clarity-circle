@@ -1,18 +1,14 @@
-import {
+﻿import {
   collection, addDoc, doc, getDoc, getDocs, updateDoc,
   query, where, orderBy, serverTimestamp, increment, arrayUnion,
 } from "firebase/firestore";
 import { db } from "./config";
 import { COLLECTIONS } from "./collections";
+import { awardPointsSecure } from "./functions";
 import type { Challenge, ChallengeProgress } from "../types";
-import { awardPoints } from "./auth";
 
 export async function getChallenges(): Promise<Challenge[]> {
-  const q = query(
-    collection(db, COLLECTIONS.CHALLENGES),
-    where("status", "in", ["active", "upcoming"]),
-    orderBy("createdAt", "desc")
-  );
+  const q = query(collection(db, COLLECTIONS.CHALLENGES), where("status", "in", ["active", "upcoming"]), orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Challenge));
 }
@@ -30,47 +26,26 @@ export async function joinChallenge(challengeId: string, userId: string): Promis
     totalPointsEarned: 0,
     status: "active",
   });
-  if (challengeSnap.exists()) {
-    await updateDoc(challengeRef, {
-      participantsCount: increment(1),
-    });
-  }
+  if (challengeSnap.exists()) await updateDoc(challengeRef, { participantsCount: increment(1) });
   return ref.id;
 }
 
 export async function getUserChallengeProgress(userId: string): Promise<ChallengeProgress[]> {
-  const q = query(
-    collection(db, COLLECTIONS.CHALLENGE_PROGRESS),
-    where("userId", "==", userId),
-    where("status", "==", "active")
-  );
+  const q = query(collection(db, COLLECTIONS.CHALLENGE_PROGRESS), where("userId", "==", userId), where("status", "==", "active"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as ChallengeProgress));
 }
 
-export async function completeChallengeDay(
-  progressId: string,
-  userId: string,
-  day: number,
-  pointsForDay: number
-): Promise<void> {
+export async function completeChallengeDay(progressId: string, _userId: string, day: number, pointsForDay: number): Promise<void> {
   await updateDoc(doc(db, COLLECTIONS.CHALLENGE_PROGRESS, progressId), {
     completedDays: arrayUnion(day),
     currentDay: day + 1,
     totalPointsEarned: increment(pointsForDay),
   });
-  await awardPoints(userId, pointsForDay, "habit_completed", `Challenge day ${day} complete!`);
+  await awardPointsSecure({ amount: pointsForDay, type: "habit_completed", description: `Challenge day ${day} complete`, referenceId: progressId });
 }
 
-export async function completeChallenge(
-  progressId: string,
-  challengeId: string,
-  userId: string,
-  totalPoints: number
-): Promise<void> {
-  await updateDoc(doc(db, COLLECTIONS.CHALLENGE_PROGRESS, progressId), {
-    status: "completed",
-    completedAt: serverTimestamp(),
-  });
-  await awardPoints(userId, totalPoints, "challenge_completed", "Challenge completed! 🎉", challengeId);
+export async function completeChallenge(progressId: string, challengeId: string, _userId: string, totalPoints: number): Promise<void> {
+  await updateDoc(doc(db, COLLECTIONS.CHALLENGE_PROGRESS, progressId), { status: "completed", completedAt: serverTimestamp() });
+  await awardPointsSecure({ amount: totalPoints, type: "challenge_completed", description: "Challenge completed", referenceId: challengeId });
 }

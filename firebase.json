@@ -1,31 +1,19 @@
-{
+﻿﻿{
   "firestore": {
-    "database": "(default)",
-    "location": "nam5",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-  "hosting": {
-    "public": "clarity-circle/out",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
-  },
-  "auth": {
-    "providers": {
-      "emailPassword": true,
-      "googleSignIn": {
-        "oAuthBrandDisplayName": "Clarity Circle🌸",
-        "supportEmail": "kiraboprosperofficial@gmail.com"
-      }
+  "storage": { "rules": "clarity-circle/storage.rules" },
+  "functions": [
+    {
+      "source": "clarity-circle/functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log", "*.local"]
     }
+  ],
+  "apphosting": {
+    "source": "clarity-circle",
+    "region": "us-central1"
   }
 }

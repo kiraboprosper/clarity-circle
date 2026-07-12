@@ -162,6 +162,8 @@
 
   .input-base {
     @apply w-full px-4 py-3 rounded-2xl text-sm transition-all duration-200;
+    box-sizing: border-box;
+    min-height: 3rem;
     background-color: var(--bg-secondary);
     border: 1.5px solid var(--border-default);
     color: var(--text-primary);

@@ -1,13 +1,22 @@
-{
-  "firestore": {
-    "rules": "src/lib/firebase/firestore.rules"
-  },
-  "storage": {
-    "rules": "storage.rules"
-  },
-  "hosting": {
-    "public": ".next",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [{ "source": "**", "destination": "/index.html" }]
-  }
+﻿{
+  "firestore": { "rules": "src/lib/firebase/firestore.rules" },
+  "storage": { "rules": "storage.rules" },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log", "*.local"]
+    }
+  ],
+  "apphosting": [
+    {
+      "backendId": "clarity-circle",
+      "config": {
+        "source": ".",
+        "region": "us-central1",
+        "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log", "functions", "storage.rules"]
+      }
+    }
+  ]
 }

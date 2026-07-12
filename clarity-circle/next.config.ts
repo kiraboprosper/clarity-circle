@@ -1,8 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  // Use Next.js default output (dynamic/runtime-enabled). App Hosting
+  // framework adapter will optimize the build for hosting.
   turbopack: {
-    root: ".",
+    // Use an absolute path for turbopack.root to avoid warnings on Vercel
+    root: path.resolve(__dirname),
   },
   images: {
     remotePatterns: [

@@ -1,37 +1,17 @@
 ﻿"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Home,
-  Leaf,
-  Trophy,
-  MessageCircle,
-  ShoppingBag,
-  User,
-  Bell,
-  Gift,
-  BarChart3,
-  CalendarDays,
-  Bookmark,
-  Settings,
-  Sprout,
-  Users,
-  Plus,
-  Search,
-  Moon,
-} from "lucide-react";
+import { Home, Leaf, Trophy, MessageCircle, User, Bell, Gift, BarChart3, CalendarDays, Bookmark, Settings, Users, Plus, Search, Moon } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/lib/context/AuthContext";
 import { Avatar } from "../ui/Avatar";
 
 const desktopNavItems = [
   { href: "/feed", icon: Home, label: "Home" },
-  { href: "/growth", icon: Sprout, label: "Growth Garden" },
   { href: "/habits", icon: Leaf, label: "Habits" },
   { href: "/challenges", icon: Trophy, label: "Challenges" },
   { href: "/circles", icon: Users, label: "Circles" },
   { href: "/chat", icon: MessageCircle, label: "Messages" },
-  { href: "/store", icon: ShoppingBag, label: "Store" },
   { href: "/rewards", icon: Gift, label: "Rewards" },
   { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/events", icon: CalendarDays, label: "Events" },
@@ -41,7 +21,7 @@ const desktopNavItems = [
 
 const mobileNavItems = [
   { href: "/feed", icon: Home, label: "Home" },
-  { href: "/growth", icon: Sprout, label: "Growth" },
+  { href: "/habits", icon: Leaf, label: "Habits" },
   { href: "/feed", icon: Plus, label: "Create" },
   { href: "/challenges", icon: Trophy, label: "Challenges" },
 ];
@@ -54,7 +34,6 @@ function isActive(pathname: string, href: string) {
 export function BottomNav() {
   const pathname = usePathname();
   const { profile } = useAuth();
-
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-default)" }}>
       <div className="grid grid-cols-5 px-2 py-2 safe-bottom">
@@ -79,7 +58,6 @@ export function BottomNav() {
 export function SideNav() {
   const pathname = usePathname();
   const { profile } = useAuth();
-
   return (
     <aside className="hidden md:flex flex-col w-64 lg:w-72 h-screen sticky top-0 border-r p-4 overflow-y-auto" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-default)" }}>
       <Link href="/feed" className="flex items-center gap-3 mb-6 group px-2">
@@ -88,7 +66,6 @@ export function SideNav() {
         </div>
         <span className="font-display text-xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>Clarity<br />Circle</span>
       </Link>
-
       <nav className="flex-1 space-y-1">
         {desktopNavItems.map(({ href, icon: Icon, label }) => {
           const active = isActive(pathname, href);
@@ -100,13 +77,11 @@ export function SideNav() {
           );
         })}
       </nav>
-
       <div className="rounded-2xl p-4 my-4 bg-gradient-to-br from-lavender-100 to-blossom-100 border border-lavender-200">
         <p className="text-sm font-bold text-midnight-900">Upgrade to Clarity Circle+</p>
-        <p className="text-xs mt-1 text-midnight-800">Unlimited habits, garden themes, analytics and premium circles.</p>
+        <p className="text-xs mt-1 text-midnight-800">Unlock unlimited habits, analytics, premium circles, and advanced challenge support.</p>
         <Link href="/settings" className="btn-primary mt-3 w-full !py-2 !text-xs">Upgrade Now</Link>
       </div>
-
       {profile && (
         <div className="pt-4 border-t" style={{ borderColor: "var(--border-default)" }}>
           <Link href={`/profile/${profile.uid}`} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-subtle transition-all">
@@ -137,7 +112,7 @@ export function TopBar({ title }: { title?: string }) {
         <span className="font-display font-bold text-base" style={{ color: "var(--text-primary)" }}>{title || "Clarity Circle"}</span>
       </div>
       <div className="ml-auto flex items-center gap-2 md:gap-4">
-        <button className="btn-ghost p-2 rounded-xl relative"><Bell className="w-5 h-5" /><span className="absolute right-1 top-1 w-4 h-4 rounded-full bg-blossom-500 text-white text-[10px] grid place-items-center">4</span></button>
+        <button className="btn-ghost p-2 rounded-xl relative"><Bell className="w-5 h-5" /></button>
         <button className="btn-ghost p-2 rounded-xl hidden md:inline-flex"><Moon className="w-5 h-5" /></button>
         <Link href={`/profile/${profile?.uid}`} className="flex items-center gap-2">
           <Avatar src={profile?.photoURL || null} name={profile?.displayName || "?"} size="sm" />

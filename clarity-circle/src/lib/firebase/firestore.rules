@@ -1,141 +1,330 @@
 rules_version = '2';
 service cloud.firestore {
+
   match /databases/{database}/documents {
 
-    // ─── Helpers ──────────────────────────────────────────────
+    // ===============================================================
+    // Assumed Data Models
+    // ===============================================================
+    //
+    // Collection: posts
+    // Document ID: {postId}
+    // Fields:
+    //   - author: map (required, immutable) - Denormalized public author info.
+    //     - uid: string (required, immutable)
+    //     - displayName: string (required, 50 chars max)
+    //     - username: string (required, 30 chars max)
+    //     - photoURL: string (optional, must be a valid URL)
+    //     - isVerified: boolean (required)
+    //   - content: string (required, 1-1000 chars)
+    //   - createdAt: timestamp (required, immutable, server-set)
+    //   - mediaURLs: list (optional, max 4 URLs) - List of image/video URLs.
+    //   - likesCount: number (required, >= 0)
+    //   - likedBy: list (required, max 5000 UIDs) - List of user UIDs who liked the post.
+    //   - commentsCount: number (required, >= 0)
+    //
+    // Collection: users/{userId}/saved_items
+    // Document ID: {savedItemId}
+    // Fields:
+    //   - id: string (required)
+    //   - type: string (required, e.g., "post")
+    //   - title: string (required, 1-80 chars)
+    //   - description: string (required, 1-100 chars)
+    //   - href: string (required, path format)
+    //   - savedAt: timestamp (required, server-set)
+    //
+    // Collection: posts/{postId}/comments
+    // Document ID: {commentId}
+    // Fields:
+    //   - uid: string (required, immutable) - Author's UID.
+    //   - author: map (required, immutable) - Denormalized public author info.
+    //     - displayName: string (required, 50 chars max)
+    //     - photoURL: string (optional, must be a valid URL)
+    //   - content: string (required, 1-500 chars)
+    //   - createdAt: timestamp (required, immutable, server-set)
+    //
+    // Collection: habits
+    // Document ID: {habitId}
+    // Fields:
+    //   - userId: string (required, immutable) - The owner's UID.
+    //   - title: string (required, 1-100 chars)
+    //   - completed: boolean (required)
+    //   - streak: number (required, >= 0)
+    //   - lastCompletedAt: timestamp (nullable)
+    //   - createdAt: timestamp (required, immutable, server-set)
+    //
+    // Collection: connections/{userId}/contacts/{contactId}
+    // Document ID: {contactId} (which is the other user's UID)
+    // Fields:
+    //   - notes: string (optional, max 5000 chars)
+    //   - communicationGoal: map (optional)
+    //     - frequency: string (e.g., "weekly", "monthly")
+    //     - day: number (e.g., 0 for Sunday)
+    //   - reminders: list of maps (optional)
+    //     - title: string (1-100 chars)
+    //     - dueDate: timestamp
+    //
+    // Collection: families
+    // Document ID: {familyId}
+    // Fields:
+    //   - parentId: string (required, immutable)
+    //   - childIds: list of strings
+    //   - name: string (1-50 chars)
+    //   - createdAt: timestamp (server-set)
+    //
+    // Subcollections under families/{familyId}:
+    //   - familyChallenges/{challengeId}
+    //   - familyEvents/{eventId}
+    //   - rewards/{rewardId}
+    //
+    // Updates to users/{userId} document:
+    //   - familyId: string (optional)
+    //   - familyRole: string (optional, 'parent' or 'child')
+    //
+    // New subcollections under users/{userId}:
+    //   - journalEntries/{entryId}
+    //   - moodCheckIns/{checkInId}
+    // ===============================================================
+
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
     function isAuthenticated() {
       return request.auth != null;
     }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    function isAdmin() {
-      return isAuthenticated() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    function isModerator() {
-      return isAuthenticated() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'moderator'];
-    }
-    function isNotBlocked(targetUid) {
-      return !(request.auth.uid in
-        get(/databases/$(database)/documents/users/$(targetUid)).data.blockedUsers);
+
+    function isPostOwner(post) {
+      return isAuthenticated() && request.auth.uid == post.author.uid;
     }
 
-    // ─── Users ────────────────────────────────────────────────
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
-
-      match /loginDates/{date} {
-        allow read, write: if isOwner(userId);
-      }
+    // --- Family Feature Helpers ---
+    function isFamilyMember(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)).data.parentId == request.auth.uid || request.auth.uid in get(/databases/$(database)/documents/families/$(familyId)).data.childIds;
     }
 
-    // ─── Posts ────────────────────────────────────────────────
+    function isParentOfFamily(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)).data.parentId == request.auth.uid;
+    }
+
+    function isParentOfUser(userId) {
+      let userFamilyId = get(/databases/$(database)/documents/users/$(userId)).data.familyId;
+      return userFamilyId != null && isParentOfFamily(userFamilyId);
+    }
+
+    // --- Caregiver Feature Helpers ---
+    function isCaregiverForFamily(familyId) {
+      return request.auth.uid in get(/databases/$(database)/documents/families/$(familyId)).data.caregivers;
+    }
+
+    function isAssignedToChild(familyId, childId) {
+      let familyDoc = get(/databases/$(database)/documents/families/$(familyId)).data;
+      return request.auth.uid in familyDoc.caregivers &&
+             familyDoc.caregivers[request.auth.uid].assignedChildIds.hasAny([childId]);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidPost(data) {
+      let author = data.author;
+      return data.keys().hasOnly(['author', 'content', 'createdAt', 'mediaURLs', 'likesCount', 'likedBy', 'commentsCount'])
+        && author.keys().hasOnly(['uid', 'displayName', 'username', 'photoURL', 'isVerified'])
+        && author.uid == request.auth.uid
+        && author.displayName is string && author.displayName.size() > 0 && author.displayName.size() <= 50
+        && author.username is string && author.username.size() > 0 && author.username.size() <= 30
+        && (!('photoURL' in author) || (author.photoURL is string && author.photoURL.matches("^https://.*")))
+        && author.isVerified is bool
+        && data.content is string && data.content.size() > 0 && data.content.size() <= 1000
+        && data.createdAt == request.time
+        && (!('mediaURLs' in data) || (data.mediaURLs is list && data.mediaURLs.size() <= 4))
+        && data.likesCount == 0
+        && data.likedBy is list && data.likedBy.size() == 0
+        && data.commentsCount == 0;
+    }
+
+    function isValidLikeUpdate(post) {
+      let incomingData = request.resource.data;
+      let existingData = resource.data;
+      let diff = incomingData.diff(existingData);
+
+      // Only allow 'likesCount' and 'likedBy' to change.
+      return diff.affectedKeys().hasOnly(['likesCount', 'likedBy'])
+        && incomingData.likedBy is list
+        // Ensure user is only adding/removing their own UID
+        && (
+          // Adding a like
+          (incomingData.likesCount == existingData.likesCount + 1 && incomingData.likedBy.hasAll(existingData.likedBy) && incomingData.likedBy.size() == existingData.likedBy.size() + 1 && incomingData.likedBy[incomingData.likedBy.size() - 1] == request.auth.uid) ||
+          // Removing a like
+          (incomingData.likesCount == existingData.likesCount - 1 && existingData.likedBy.hasAll(incomingData.likedBy) && incomingData.likedBy.size() == existingData.likedBy.size() - 1 && !incomingData.likedBy.hasAny([request.auth.uid]))
+        );
+    }
+
+    function isValidComment(data) {
+      let author = data.author;
+      return data.keys().hasOnly(['uid', 'author', 'content', 'createdAt'])
+        && data.uid == request.auth.uid
+        && author.keys().hasOnly(['displayName', 'photoURL'])
+        && author.displayName is string && author.displayName.size() > 0 && author.displayName.size() <= 50
+        && (!('photoURL' in author) || (author.photoURL is string && author.photoURL.matches("^https://.*")))
+        && data.content is string && data.content.size() > 0 && data.content.size() <= 500
+        && data.createdAt == request.time;
+    }
+
+    function isValidCommentUpdate(data) {
+        let existingData = resource.data;
+        // Only content can be updated.
+        return data.keys().hasOnly(['uid', 'author', 'content', 'createdAt'])
+            && data.uid == existingData.uid
+            && data.author == existingData.author
+            && data.createdAt == existingData.createdAt
+            && data.content is string && data.content.size() > 0 && data.content.size() <= 500;
+    }
+
+    function isValidHabit(data) {
+      return data.keys().hasOnly(['userId', 'title', 'completed', 'createdAt', 'streak', 'lastCompletedAt'])
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 100
+        && data.completed == false
+        && data.streak == 0
+        && data.lastCompletedAt == null
+        && data.createdAt == request.time;
+    }
+
+    function isValidHabitUpdate(data) {
+      let existingData = resource.data;
+      let diff = data.diff(existingData);
+      // Allow 'completed', 'streak', and 'lastCompletedAt' to be changed.
+      return diff.affectedKeys().hasOnly(['completed', 'streak', 'lastCompletedAt'])
+        && data.completed is bool
+        && data.streak is number && data.streak >= 0
+        && (data.lastCompletedAt == null || data.lastCompletedAt is timestamp)
+        && data.userId == existingData.userId; // Ensure immutable fields are not changed
+    }
+
+    function isValidDailyReport(data) {
+      // On create, validate the core immutable fields.
+      return data.keys().hasAny(['childId', 'familyId', 'caregiverId', 'reportDate', 'status'])
+        && data.caregiverId == request.auth.uid
+        && data.status == 'in_progress'
+        && data.reportDate is timestamp
+        // Verify the caregiver is actually assigned to this child in this family.
+        && isAssignedToChild(data.familyId, data.childId);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
     match /posts/{postId} {
-      allow read: if isAuthenticated() && resource.data.isHidden == false;
-      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isOwner(resource.data.authorId) || isModerator();
-      allow delete: if isOwner(resource.data.authorId) || isModerator();
-    }
-
-    // ─── Comments ─────────────────────────────────────────────
-    match /comments/{commentId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isOwner(resource.data.authorId) || isModerator();
-      allow delete: if isOwner(resource.data.authorId) || isModerator();
-    }
+      allow create: if isAuthenticated() && isValidPost(request.resource.data);
+      allow delete: if isAuthenticated() && isPostOwner(resource.data);
+      allow update: if isAuthenticated() && (
+        isValidLikeUpdate(request.resource.data) ||
+        // Allow incrementing/decrementing commentsCount (likely from a Cloud Function)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentsCount']) &&
+         (request.resource.data.commentsCount == resource.data.commentsCount + 1 ||
+          request.resource.data.commentsCount == resource.data.commentsCount - 1))
+      );
 
-    // ─── Conversations + Messages ─────────────────────────────
-    match /conversations/{convId} {
-      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
-      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
-      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
-
-      match /messages/{msgId} {
-        allow read: if isAuthenticated() &&
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
-        allow create: if isAuthenticated() &&
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants &&
-          request.resource.data.senderId == request.auth.uid;
-        allow update: if isOwner(resource.data.senderId) || isModerator();
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isValidComment(request.resource.data);
+        allow update: if isAuthenticated() && isOwner(resource.data.uid) && isValidCommentUpdate(request.resource.data);
+        allow delete: if isAuthenticated() && isOwner(resource.data.uid);
       }
     }
 
-    // ─── Habits ───────────────────────────────────────────────
     match /habits/{habitId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // A user can only read, update, or delete their own habits.
+      allow read, update, delete: if isOwner(resource.data.userId);
+
+      // Apply stricter validation on create and update.
+      allow create: if isAuthenticated() && isValidHabit(request.resource.data);
+      allow update: if isOwner(resource.data.userId) && isValidHabitUpdate(request.resource.data);
     }
 
-    // ─── Challenges ───────────────────────────────────────────
-    match /challenges/{challengeId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+    match /connections/{userId}/{document=**} {
+      // A user can only access their own connection data.
+      allow read, write, delete: if isOwner(userId);
     }
 
-    match /challengeProgress/{progressId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    // ===============================================================
+    // Family Feature Rules
+    // ===============================================================
+
+    match /families/{familyId} {
+      // Only family members can read the family document.
+      allow read: if isFamilyMember(familyId) || isCaregiverForFamily(familyId);
+      // Only the parent can update the family (e.g., add/remove children).
+      allow update: if isParentOfFamily(familyId);
+      // Any authenticated user can create a family, but they must be the parent.
+      allow create: if isAuthenticated() && request.resource.data.parentId == request.auth.uid;
+
+      // Rules for shared family subcollections
+      match /familyChallenges/{challengeId} {
+        allow read: if isFamilyMember(familyId);
+        allow write: if isParentOfFamily(familyId); // Only parent can create/update challenges
+
+        match /participants/{userId} {
+          // A family member can update their own participation status.
+          allow write: if isOwner(userId) && isFamilyMember(familyId);
+          allow read: if isFamilyMember(familyId);
+        }
+      }
+
+      match /rewards/{rewardId} {
+        allow read: if isFamilyMember(familyId);
+        allow write: if isParentOfFamily(familyId); // Only parent can manage rewards
+      }
+
+      match /familyEvents/{eventId} {
+        allow read: if isFamilyMember(familyId);
+        allow write: if isParentOfFamily(familyId); // Only parent can manage the calendar
+      }
     }
 
-    // ─── Points ───────────────────────────────────────────────
-    match /points/{txId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated();
-      allow update, delete: if isAdmin();
+    // Rules for private child data with sharing controls
+    match /users/{userId}/journalEntries/{entryId} {
+      // A child can manage their own journal.
+      allow read, write, delete: if isOwner(userId);
+      // A parent can ONLY read an entry if it has been explicitly shared.
+      allow get: if isParentOfUser(userId) && resource.data.sharedWithParent == true;
     }
 
-    // ─── Products ─────────────────────────────────────────────
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if isAdmin();
+    match /users/{userId}/moodCheckIns/{checkInId} {
+      allow read, write, delete: if isOwner(userId);
+      // A parent can read mood check-ins. The client-side logic will hide the note if not shared.
+      allow get: if isParentOfUser(userId);
     }
 
-    // ─── Reports ──────────────────────────────────────────────
-    match /reports/{reportId} {
-      allow read: if isModerator();
-      allow create: if isAuthenticated() && request.resource.data.reporterId == request.auth.uid;
-      allow update: if isModerator();
-    }
+    match /dailyReports/{reportId} {
+      // A parent of the family can read any report for their child.
+      // The caregiver who created it can also read it.
+      allow read: if isParentOfFamily(resource.data.familyId) || isOwner(resource.data.caregiverId);
 
-    // ─── Follows ──────────────────────────────────────────────
-    match /follows/{followId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.followerId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.followerId == request.auth.uid;
-    }
+      // A caregiver can create a report if they are assigned to the child.
+      allow create: if isValidDailyReport(request.resource.data);
 
-    // ─── Subscriptions ────────────────────────────────────────
-    match /subscriptions/{subId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow write: if isAdmin();
-    }
+      // A caregiver can update a report they own, but only while it's in progress.
+      // A parent cannot update reports to preserve data integrity.
+      allow update: if isOwner(resource.data.caregiverId) && resource.data.status == 'in_progress';
 
-    // ─── Gardens ──────────────────────────────────────────────
-    match /gardens/{gardenId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
+      // Only a parent can delete a report.
+      allow delete: if isParentOfFamily(resource.data.familyId);
 
-    // ─── Notifications ────────────────────────────────────────
-    match /notifications/{notifId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource.data.userId);
-    }
-
-    // ─── Businesses ───────────────────────────────────────────
-    match /businesses/{bizId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      // Subcollection rules for events within a report.
+      match /{subcollection}/{eventId} {
+        // The creating caregiver can read/write events only while the report is in progress.
+        allow read, write: if isOwner(get(/databases/$(database)/documents/dailyReports/$(reportId)).data.caregiverId) && get(/databases/$(database)/documents/dailyReports/$(reportId)).data.status == 'in_progress';
+      }
     }
   }
 }

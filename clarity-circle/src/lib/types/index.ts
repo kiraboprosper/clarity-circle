@@ -1,9 +1,18 @@
 ﻿import { Timestamp } from "firebase/firestore";
 
-// â”€â”€â”€ User â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-export type SubscriptionTier = "free" | "clarity_plus" | "family" | "business";
+export type SubscriptionTier = "free" | "pro" | "business";
 export type UserRole = "user" | "moderator" | "admin";
+export type GrowthStage = "seed" | "sprout" | "bloom" | "flourish" | "radiant";
+export type ThemePreference = "light" | "dark" | "system";
+
+export interface NotificationSettings {
+  likes: boolean;
+  comments: boolean;
+  follows: boolean;
+  challenges: boolean;
+  directMessages: boolean;
+  communityUpdates: boolean;
+}
 
 export interface UserProfile {
   uid: string;
@@ -36,21 +45,7 @@ export interface UserProfile {
   ageVerified: boolean;
 }
 
-export type GrowthStage = "seed" | "sprout" | "bloom" | "flourish" | "radiant";
-export type ThemePreference = "light" | "dark" | "system";
-
-export interface NotificationSettings {
-  likes: boolean;
-  comments: boolean;
-  follows: boolean;
-  challenges: boolean;
-  directMessages: boolean;
-  communityUpdates: boolean;
-}
-
-// â”€â”€â”€ Post â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-export type PostType = "text" | "image" | "habit_share" | "challenge_update" | "garden_share";
+export type PostType = "text" | "image" | "habit_share" | "challenge_update";
 
 export interface Post {
   id: string;
@@ -80,11 +75,10 @@ export interface Comment {
   likesCount: number;
   likedBy: string[];
   isReported: boolean;
+  isHidden: boolean;
   parentCommentId: string | null;
   createdAt: Timestamp;
 }
-
-// â”€â”€â”€ Habits â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type HabitFrequency = "daily" | "weekly";
 export type HabitCategory = "health" | "mindset" | "learning" | "faith" | "creativity" | "social" | "finance";
@@ -105,6 +99,8 @@ export interface Habit {
   color: string;
   icon: string;
   isArchived: boolean;
+  completed?: boolean;
+  lastCompletedAt?: Timestamp | null;
   createdAt: Timestamp;
 }
 
@@ -116,8 +112,6 @@ export interface HabitLog {
   note: string;
   pointsEarned: number;
 }
-
-// â”€â”€â”€ Challenges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type ChallengeStatus = "upcoming" | "active" | "completed" | "archived";
 export type ChallengeDifficulty = "beginner" | "intermediate" | "advanced";
@@ -160,8 +154,6 @@ export interface ChallengeProgress {
   status: "active" | "completed" | "abandoned";
 }
 
-// â”€â”€â”€ Points & Rewards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 export type PointEventType =
   | "account_created"
   | "onboarding_completed"
@@ -170,7 +162,6 @@ export type PointEventType =
   | "helpful_comment"
   | "post_created"
   | "challenge_completed"
-  | "referral"
   | "reward_redeemed";
 
 export interface PointTransaction {
@@ -187,16 +178,13 @@ export interface Reward {
   id: string;
   name: string;
   description: string;
-  type: "theme" | "badge" | "discount" | "premium_trial";
+  type: "theme" | "badge" | "premium_trial";
   pointsCost: number;
   imageURL: string;
-  discountAmount: number | null;
   isPremiumOnly: boolean;
   stock: number | null;
   expiresAt: Timestamp | null;
 }
-
-// â”€â”€â”€ Chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface Conversation {
   id: string;
@@ -210,6 +198,23 @@ export interface Conversation {
   name: string | null;
   avatarURL: string | null;
   createdAt: Timestamp;
+}
+
+export interface SuggestedContact {
+  id: string;
+  name: string;
+  photoURL: string;
+  reason: string;
+}
+
+export interface CommunicationGoal {
+  goal: string;
+  deadline: Timestamp | null;
+}
+
+export interface ContactData {
+  notes: string;
+  communicationGoal: CommunicationGoal | null;
 }
 
 export interface Message {
@@ -226,56 +231,38 @@ export interface Message {
   createdAt: Timestamp;
 }
 
-// â”€â”€â”€ Store â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-export interface Product {
+export interface AssignedChild {
   id: string;
-  printifyId: string;
   name: string;
-  description: string;
-  imageURLs: string[];
-  price: number;
-  category: string;
-  season: string;
-  stock: number;
-  isActive: boolean;
-  tags: string[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  photoURL: string;
 }
 
-export interface Order {
+export type MoodEventType = "happy" | "sad" | "angry" | "anxious" | "excited" | "tired";
+export type BehaviorEventType = "fed" | "diaper_changed" | "nap" | "play_time" | "medication";
+
+export interface MoodEvent {
   id: string;
-  userId: string;
-  items: OrderItem[];
-  total: number;
-  discountApplied: number;
-  pointsUsed: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
-  shippingAddress: ShippingAddress;
-  printifyOrderId: string | null;
-  createdAt: Timestamp;
+  mood: MoodEventType;
+  notes: string;
+  time: Timestamp;
 }
 
-export interface OrderItem {
-  productId: string;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  imageURL: string;
+export interface BehaviorEvent {
+  id: string;
+  behavior: BehaviorEventType;
+  notes: string;
+  time: Timestamp;
 }
 
-export interface ShippingAddress {
-  name: string;
-  line1: string;
-  line2: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
+export interface DailyReport {
+  id: string;
+  childId: string;
+  familyId: string;
+  caregiverId: string;
+  reportDate: Timestamp;
+  status: "in_progress" | "submitted" | "approved";
+  summary?: string;
 }
-
-// â”€â”€â”€ Safety / Reports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type ReportReason = "bullying" | "harassment" | "hate_speech" | "spam" | "scam" | "inappropriate";
 export type ReportStatus = "pending" | "reviewed" | "actioned" | "dismissed";
@@ -296,27 +283,6 @@ export interface Report {
   createdAt: Timestamp;
 }
 
-// â”€â”€â”€ Growth Garden â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-export interface Garden {
-  id: string;
-  userId: string;
-  stage: GrowthStage;
-  flowers: GardenFlower[];
-  totalWatered: number;
-  lastWateredAt: Timestamp | null;
-}
-
-export interface GardenFlower {
-  id: string;
-  type: string;
-  bloomedAt: Timestamp;
-  habitId: string | null;
-  challengeId: string | null;
-}
-
-// â”€â”€â”€ Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 export type NotificationType = "like" | "comment" | "follow" | "challenge" | "reward" | "system";
 
 export interface Notification {
@@ -331,4 +297,3 @@ export interface Notification {
   actorProfile: Pick<UserProfile, "uid" | "displayName" | "photoURL"> | null;
   createdAt: Timestamp;
 }
-

@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
-import { Search, Shield, Ban, CheckCircle } from "lucide-react";
+import { Search, Shield } from "lucide-react";
 import { collection, getDocs, orderBy, query, limit, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { COLLECTIONS } from "@/lib/firebase/collections";
@@ -41,7 +41,7 @@ export default function AdminUsersPage() {
         <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Users</h1>
         <span className="badge badge-lavender">{users.length} total</span>
       </div>
-      <Input placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)} leftElement={<Search className="w-4 h-4" />} />
+      <Input placeholder="Search by name or emailâ€¦" value={search} onChange={(e) => setSearch(e.target.value)} leftElement={<Search className="w-4 h-4" />} />
       <div className="card p-0 overflow-hidden">
         <table className="w-full">
           <thead>
@@ -75,7 +75,7 @@ export default function AdminUsersPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
-                    <span className="text-sm text-amber-500 font-medium">✦ {user.points}</span>
+                    <span className="text-sm text-amber-500 font-medium">âœ¦ {user.points}</span>
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={user.role === "admin" ? "blossom" : user.role === "moderator" ? "gold" : "gray"}>
@@ -105,3 +105,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
