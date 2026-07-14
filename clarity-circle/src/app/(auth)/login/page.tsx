@@ -22,7 +22,7 @@ export default function LoginPage() {
     setError("");
     try {
       await signInWithEmail(form.email, form.password);
-      router.replace("/feed");
+      router.replace("/onboarding");
     } catch (e: any) {
       setError(e.code === "auth/invalid-credential" ? "Incorrect email or password." : "Something went wrong. Please try again.");
     } finally {
@@ -34,7 +34,7 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      router.replace("/feed");
+      router.replace("/onboarding");
     } catch {
       setError("Google sign in failed.");
     } finally {

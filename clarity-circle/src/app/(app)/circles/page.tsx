@@ -1,6 +1,6 @@
 ﻿"use client";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, CheckCircle2, Compass, MessageCircle, Search, ShieldOff, Sparkles, Users } from "lucide-react";
+import { CalendarDays, CheckCircle2, Compass, MessageCircle, Search, ShieldOff, Sparkles, Users, PlusCircle } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -41,6 +41,7 @@ export default function CirclesPage() {
   const [circleCategory, setCircleCategory] = useState("Study");
   const [activeChat, setActiveChat] = useState("chat-1");
   const [chatDraft, setChatDraft] = useState("");
+  const [message, setMessage] = useState("");
 
   const usernameCheck = useMemo(() => claimUsername(state.users, usernameInput), [state.users, usernameInput]);
   const activeChatData = useMemo(
@@ -64,6 +65,7 @@ export default function CirclesPage() {
       ownerId: "u1",
     }));
     setCircleName("");
+    setMessage(`Your circle “${circleName.trim()}” is ready to invite people into.`);
   };
 
   const handleRequest = () => {
@@ -72,6 +74,7 @@ export default function CirclesPage() {
     if (usernameCheck.available) return;
     setState((prev) => createConnectionRequest(prev, { fromUserId: "u1", targetUsername: username }));
     setUsernameInput("");
+    setMessage(`A request to connect with @${username} has been sent.`);
   };
 
   const handleUnblock = (targetUsername: string) => {
@@ -82,6 +85,7 @@ export default function CirclesPage() {
     if (!chatDraft.trim()) return;
     setState((prev) => sendCircleMessage(prev, { conversationId: activeChat, senderId: "u1", content: chatDraft.trim() }));
     setChatDraft("");
+    setMessage("Your message is now in the circle chat.");
   };
 
   return (
@@ -107,6 +111,12 @@ export default function CirclesPage() {
           <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{state.circles.length}</p>
         </Card>
       </div>
+
+      {message && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {message}
+        </div>
+      )}
 
       <Card className="p-5 border border-lavender-200 bg-lavender-50">
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
@@ -192,6 +202,9 @@ export default function CirclesPage() {
                     {community.announcements.map((announcement) => <li key={announcement}>• {announcement}</li>)}
                   </ul>
                 </div>
+                <Button variant="secondary" leftIcon={<PlusCircle className="w-4 h-4" />} onClick={() => setMessage(`You joined ${community.name}.`)}>
+                  Join circle
+                </Button>
               </div>
             </Card>
           ))}

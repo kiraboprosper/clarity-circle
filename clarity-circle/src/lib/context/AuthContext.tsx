@@ -9,6 +9,8 @@ import { waitForAuthState } from "./authBootstrap";
 import { buildFallbackProfile } from "../firebase/fallbacks";
 import { getDemoAuthState } from "./demoAuth";
 
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 6000;
+
 interface AuthContextValue {
   user: User | null;
   profile: UserProfile | null;
@@ -65,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const initialUser = await waitForAuthState(auth, onAuthStateChanged, 4000);
+        const initialUser = await waitForAuthState(auth, onAuthStateChanged, AUTH_BOOTSTRAP_TIMEOUT_MS);
         if (!isMounted) return;
 
         setUser(initialUser);
