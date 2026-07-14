@@ -11,9 +11,6 @@ import { CreatePost } from "./CreatePost";
 import { PostCard } from "./PostCard";
 import { DashboardModules } from "./DashboardModules";
 
-import type { User } from "firebase/auth";
-import type { UserProfile } from "@/lib/types";
-
 export default function FeedPage() {
   const { user, profile } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -79,7 +76,7 @@ export default function FeedPage() {
         <p className="text-md mt-1" style={{ color: "var(--text-muted)" }}>Your personal space for reflections and growth.</p>
       </header>
 
-      {user && profile && <CreatePost user={user} profile={profile} onCreatePost={handleCreatePost} />}
+      {user && profile && <CreatePost profile={profile} onCreatePost={handleCreatePost} />}
 
       <div className="space-y-5">
         {posts.map(post => (

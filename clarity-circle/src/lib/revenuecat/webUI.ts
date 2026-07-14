@@ -13,7 +13,8 @@ const PAYWALL_RESULT = {
 export type PaywallResult = (typeof PAYWALL_RESULT)[keyof typeof PAYWALL_RESULT];
 
 const RevenueCatUI = {
-  presentPaywallIfNeeded: async (_opts?: PresentPaywallIfNeededParams): Promise<PaywallResult> => {
+  presentPaywallIfNeeded: async (opts?: PresentPaywallIfNeededParams): Promise<PaywallResult> => {
+    void opts;
     // No-op on web placeholder; return NOT_PRESENTED
     return PAYWALL_RESULT.NOT_PRESENTED;
   },

@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { User } from "firebase/auth";
 import type { UserProfile } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Input";
 
-export function CreatePost({ user, profile, onCreatePost }: { user: User, profile: UserProfile, onCreatePost: (content: string) => Promise<void> }) {
+export function CreatePost({ profile, onCreatePost }: { profile: UserProfile, onCreatePost: (content: string) => Promise<void> }) {
   const [content, setContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
 

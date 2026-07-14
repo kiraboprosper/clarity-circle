@@ -1,7 +1,7 @@
 ﻿"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Leaf, Trophy, MessageCircle, User, Bell, Gift, BarChart3, CalendarDays, Bookmark, Settings, Users, Plus, Search } from "lucide-react";
+import { Home, Leaf, MessageCircle, User, Bell, Gift, BarChart3, CalendarDays, Bookmark, Settings, Users, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/lib/context/AuthContext";
 import { Avatar } from "../ui/Avatar";
@@ -9,8 +9,7 @@ import { Avatar } from "../ui/Avatar";
 const desktopNavItems = [
   { href: "/feed", icon: Home, label: "Home" },
   { href: "/habits", icon: Leaf, label: "Habits" },
-  { href: "/challenges", icon: Trophy, label: "Challenges" },
-  { href: "/circles", icon: Users, label: "Circles" },
+  { href: "/circles", icon: Users, label: "Circle" },
   { href: "/chat", icon: MessageCircle, label: "Messages" },
   { href: "/rewards", icon: Gift, label: "Rewards" },
   { href: "/analytics", icon: BarChart3, label: "Analytics" },
@@ -22,8 +21,9 @@ const desktopNavItems = [
 const mobileNavItems = [
   { href: "/feed", icon: Home, label: "Home" },
   { href: "/habits", icon: Leaf, label: "Habits" },
+  { href: "/circles", icon: Users, label: "Circle" },
+  { href: "/chat", icon: MessageCircle, label: "Chat" },
   { href: "/feed", icon: Plus, label: "Create" },
-  { href: "/challenges", icon: Trophy, label: "Challenges" },
 ];
 
 function isActive(pathname: string, href: string) {

@@ -19,7 +19,8 @@ type Listener = (info: CustomerInfo) => void;
 const listeners = new Set<Listener>();
 
 const Purchases = {
-  configure: async (_opts: { apiKey?: string; appUserID?: string }) => {
+  configure: async (opts: { apiKey?: string; appUserID?: string }) => {
+    void opts;
     // No-op for web; if you want web subscriptions, integrate RevenueCat JS SDK here.
     return;
   },
@@ -36,8 +37,8 @@ const Purchases = {
   restorePurchases: async (): Promise<CustomerInfo> => {
     return { entitlements: { active: {} } };
   },
-  setLogLevel: (_level: LOG_LEVEL) => {
-    // noop
+  setLogLevel: (level: LOG_LEVEL) => {
+    void level;
   },
 };
 

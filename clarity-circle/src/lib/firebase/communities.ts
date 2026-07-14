@@ -13,9 +13,7 @@ import {
   arrayUnion,
   arrayRemove,
   increment,
-  setDoc,
   deleteDoc,
-  getDocFromCache,
   getDocs,
 } from "firebase/firestore";
 import { db } from "./config";

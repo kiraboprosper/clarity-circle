@@ -1,13 +1,13 @@
 ﻿﻿﻿﻿import { readFileSync } from "node:fs";
 import path from "node:path";
-import { afterAll, afterEach, beforeAll, describe, expect, it, beforeEach } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, it, beforeEach } from "vitest";
 import {
   assertFails,
   assertSucceeds,
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, type DocumentReference } from "firebase/firestore";
 
 let testEnv: RulesTestEnvironment;
 
@@ -353,8 +353,21 @@ describe("Community creation rules", () => {
     const aliceDb = testEnv.authenticatedContext("alice").firestore();
     // This simulates the batch write from the `createCommunity` function
     const batch = aliceDb.batch();
-    const communityRef = doc(aliceDb, "communities", "comm1");
-    const memberRef = doc(aliceDb, "community_members", "alice_comm1");
+    const communityRef = doc(aliceDb, "communities", "comm1") as DocumentReference<{
+      name: string;
+      description: string;
+      category: string;
+      privacy: string;
+      rules: string;
+      tags: string[];
+      creatorId: string;
+      memberCount: number;
+    }>;
+    const memberRef = doc(aliceDb, "community_members", "alice_comm1") as DocumentReference<{
+      userId: string;
+      communityId: string;
+      role: string;
+    }>;
 
     batch.set(communityRef, { ...validCommunityData, creatorId: "alice", memberCount: 1 });
     batch.set(memberRef, { userId: "alice", communityId: "comm1", role: "owner" });
@@ -365,8 +378,21 @@ describe("Community creation rules", () => {
   it("should block creating a community when unauthenticated", async () => {
     const unauthedDb = testEnv.unauthenticatedContext().firestore();
     const batch = unauthedDb.batch();
-    const communityRef = doc(unauthedDb, "communities", "comm1");
-    const memberRef = doc(unauthedDb, "community_members", "guest_comm1");
+    const communityRef = doc(unauthedDb, "communities", "comm1") as DocumentReference<{
+      name: string;
+      description: string;
+      category: string;
+      privacy: string;
+      rules: string;
+      tags: string[];
+      creatorId: string;
+      memberCount: number;
+    }>;
+    const memberRef = doc(unauthedDb, "community_members", "guest_comm1") as DocumentReference<{
+      userId: string;
+      communityId: string;
+      role: string;
+    }>;
 
     batch.set(communityRef, { ...validCommunityData, creatorId: "guest", memberCount: 1 });
     batch.set(memberRef, { userId: "guest", communityId: "comm1", role: "owner" });

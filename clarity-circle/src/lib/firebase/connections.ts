@@ -1,6 +1,6 @@
-import { collection, query, where, orderBy, limit, getDocs, doc, getDoc, setDoc, deleteField, Timestamp } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, getDocs, doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { db } from "./config";
-import type { SuggestedContact, Conversation, CommunicationGoal, ContactData } from "../types";
+import type { SuggestedContact, Conversation, ContactData } from "../types";
 
 /**
  * Fetches a list of suggested contacts for a user to reach out to.
@@ -106,7 +106,6 @@ export async function getConversations(userId: string): Promise<Conversation[]> 
     if (!userDoc.exists()) return null;
 
     const userData = userDoc.data();
-    const unreadCount = chatData.unreadCount ? chatData.unreadCount[userId] || 0 : 0;
     const lastMessageAt = chatData.lastMessageAt instanceof Timestamp ? chatData.lastMessageAt : Timestamp.fromDate(new Date(chatData.lastMessageAt?.seconds ? chatData.lastMessageAt.seconds * 1000 : Date.now()));
 
     return {

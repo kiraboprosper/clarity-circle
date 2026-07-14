@@ -1,11 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import Purchases, { CustomerInfo, LOG_LEVEL, PurchasesError } from '@/lib/revenuecat/webPurchases';
-import RevenueCatUI, { type PresentPaywallIfNeededParams } from '@/lib/revenuecat/webUI';
+import RevenueCatUI from '@/lib/revenuecat/webUI';
 
 // --- Configuration ---
-// IMPORTANT: In a real app, use environment variables for keys.
-const REVENUECAT_API_KEY_IOS = 'appl_public_ios_key'; // Replace with your actual key
-const REVENUECAT_API_KEY_ANDROID = 'goog_public_android_key'; // Replace with your actual key
+// IMPORTANT: In a real app, use environment variables for keys and production entitlements.
 const ENTITLEMENT_ID = 'clarity circle Pro';
 
 interface RevenueCatContextState {
