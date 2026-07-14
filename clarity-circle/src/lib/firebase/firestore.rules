@@ -256,6 +256,22 @@ service cloud.firestore {
       allow read, write, delete: if isOwner(userId);
     }
 
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isParentOfUser(userId));
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'bio', 'photoURL', 'isPrivate', 'theme', 'notificationSettings', 'onboardingCompleted', 'blockedUsers', 'lastActiveAt', 'displayName', 'username', 'age', 'ageVerified', 'email'
+      ]);
+      allow delete: if isAuthenticated() && isOwner(userId);
+
+      match /loginDates/{date} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
     // ===============================================================
     // Family Feature Rules
     // ===============================================================

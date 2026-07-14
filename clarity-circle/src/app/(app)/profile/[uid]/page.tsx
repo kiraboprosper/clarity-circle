@@ -12,9 +12,12 @@ import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/lib/context/AuthContext";
 import { getUserProfile, followUser, unfollowUser, isFollowing } from "@/lib/firebase/users";
 import { getUserPosts } from "@/lib/firebase/posts";
+import { toggleLike } from "@/lib/firebase/posts";
+import { buildFallbackProfile } from "@/lib/firebase/fallbacks";
 import { getOrCreateDirectConversation } from "@/lib/firebase/chat";
-import { timeAgo, formatDate, GROWTH_STAGE_LABELS, GROWTH_STAGE_EMOJIS, xpToNextLevel, formatPoints } from "@/lib/utils/format";
+import { formatDate, GROWTH_STAGE_LABELS, GROWTH_STAGE_EMOJIS, xpToNextLevel, formatPoints } from "@/lib/utils/format";
 import type { UserProfile, Post } from "@/lib/types";
+import { PostCard } from "@/app/(app)/feed/PostCard";
 
 const SUBSCRIPTION_LABELS = { free: "Free", pro: "Pro", business: "Business" } as const;
 
@@ -34,17 +37,37 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const load = async () => {
-      const [p, userPosts, followStatus] = await Promise.all([
-        getUserProfile(uid),
-        getUserPosts(uid),
-        user && !isOwnProfile ? isFollowing(user.uid, uid) : Promise.resolve(false),
-      ]);
-      setProfile(p);
-      setPosts(userPosts);
-      setFollowing(followStatus);
-      setLoading(false);
+      try {
+        const [p, userPosts, followStatus] = await Promise.all([
+          getUserProfile(uid),
+          getUserPosts(uid),
+          user && !isOwnProfile ? isFollowing(user.uid, uid) : Promise.resolve(false),
+        ]);
+
+        if (p) {
+          setProfile(p);
+        } else if (user?.uid === uid) {
+          setProfile(buildFallbackProfile(user));
+        } else {
+          setProfile(null);
+        }
+
+        setPosts(userPosts);
+        setFollowing(followStatus);
+      } catch (error) {
+        console.warn("Profile page fallback activated:", error);
+        if (user?.uid === uid) {
+          setProfile(buildFallbackProfile(user));
+        } else {
+          setProfile(null);
+        }
+        setPosts([]);
+      } finally {
+        setLoading(false);
+      }
     };
-    load();
+
+    void load();
   }, [uid, user, isOwnProfile]);
 
   const handleFollow = async () => {
@@ -72,6 +95,12 @@ export default function ProfilePage() {
       { uid: profile.uid, displayName: profile.displayName, photoURL: profile.photoURL }
     );
     router.push(`/chat?conversation=${conversationId}`);
+  };
+
+  const handleToggleLike = async (postId: string, liked: boolean) => {
+    if (!user) return;
+    await toggleLike(postId, user.uid, liked);
+    setPosts(posts.map(p => p.id === postId ? { ...p, likedBy: liked ? p.likedBy.filter(uid => uid !== user.uid) : [...p.likedBy, user.uid], likesCount: liked ? p.likesCount - 1 : p.likesCount + 1 } : p));
   };
 
   if (loading) return <ProfileSkeleton />;
@@ -192,12 +221,7 @@ export default function ProfilePage() {
               <p style={{ color: "var(--text-muted)" }}>No posts yet.</p>
             </div>
           ) : (
-            posts.map((post) => (
-              <Card key={post.id}>
-                <p className="text-sm" style={{ color: "var(--text-primary)" }}>{post.content}</p>
-                <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>{timeAgo(post.createdAt)}</p>
-              </Card>
-            ))
+            posts.map((post) => <PostCard key={post.id} post={post} onToggleLike={handleToggleLike} />)
           )}
         </div>
       )}
@@ -240,5 +264,3 @@ function ProfileSkeleton() {
     </div>
   );
 }
-
-

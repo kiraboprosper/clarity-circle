@@ -39,6 +39,12 @@ export const RevenueCatProvider = ({ children, appUserID }: RevenueCatProviderPr
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<PurchasesError | null>(null);
 
+  const updateCustomerInfo = (info: CustomerInfo) => {
+    setCustomerInfo(info);
+    const proEntitlement = info.entitlements.active[ENTITLEMENT_ID];
+    setIsPro(typeof proEntitlement !== 'undefined');
+  };
+
   useEffect(() => {
     // Handler must be in the outer scope so cleanup can reference it.
     const onCustomerInfoUpdated = (info: CustomerInfo) => {
@@ -72,12 +78,6 @@ export const RevenueCatProvider = ({ children, appUserID }: RevenueCatProviderPr
       Purchases.removeCustomerInfoUpdateListener(onCustomerInfoUpdated);
     };
   }, [appUserID]);
-
-  const updateCustomerInfo = (info: CustomerInfo) => {
-    setCustomerInfo(info);
-    const proEntitlement = info.entitlements.active[ENTITLEMENT_ID];
-    setIsPro(typeof proEntitlement !== 'undefined');
-  };
 
   const handlePresentPaywall = async (): Promise<boolean> => {
     try {

@@ -1,4 +1,5 @@
 ﻿﻿﻿﻿import { readFileSync } from "node:fs";
+import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, beforeEach } from "vitest";
 import {
   assertFails,
@@ -11,10 +12,11 @@ import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 let testEnv: RulesTestEnvironment;
 
 beforeAll(async () => {
+  const rulesPath = path.resolve(process.cwd(), "../firestore.rules");
   testEnv = await initializeTestEnvironment({
     projectId: "clarity-circle-rules-test",
     firestore: {
-      rules: readFileSync("firestore.rules", "utf8"),
+      rules: readFileSync(rulesPath, "utf8"),
     },
   });
 });
@@ -88,6 +90,35 @@ describe("Firestore security rules", () => {
     await seedUser("alice");
     const db = testEnv.authenticatedContext("alice").firestore();
     await assertFails(setDoc(doc(db, "subscriptions", "alice"), { userId: "alice", tier: "business" }));
+  });
+
+  it("allows authenticated users to manage their own profile and login dates", async () => {
+    await seedUser("alice");
+    const db = testEnv.authenticatedContext("alice").firestore();
+
+    await assertSucceeds(setDoc(doc(db, "users", "alice"), {
+      uid: "alice",
+      email: "alice@example.com",
+      displayName: "Alice",
+      username: "alice",
+      role: "user",
+      points: 0,
+      subscriptionTier: "free",
+      notificationSettings: {
+        likes: true,
+        comments: true,
+        follows: true,
+        challenges: true,
+        directMessages: true,
+        communityUpdates: true,
+      },
+    }));
+    await assertSucceeds(getDoc(doc(db, "users", "alice")));
+    await assertSucceeds(setDoc(doc(db, "users", "alice", "loginDates", "2025-01-01"), {
+      date: "2025-01-01",
+      recordedAt: new Date(),
+    }));
+    await assertSucceeds(getDoc(doc(db, "users", "alice", "loginDates", "2025-01-01")));
   });
 
   it("allows admins to manage rewards and normal users only to read them", async () => {

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils/cn";
 import { Loader2 } from "lucide-react";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "blossom" | "link";
-type Size = "sm" | "md" | "lg";
+type Size = "sm" | "md" | "lg" | "icon";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -15,18 +15,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary:   "btn-primary",
+  primary: "btn-primary",
   secondary: "btn-secondary",
-  ghost:     "btn-ghost",
-  danger:    "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl font-medium text-sm transition-all duration-200 bg-red-500 hover:bg-red-600 text-white",
-  blossom:   "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl font-medium text-sm transition-all duration-200 bg-gradient-to-r from-blossom-400 to-blossom-500 text-white shadow-bloom hover:-translate-y-0.5 hover:shadow-lg",
-  link:      "inline-flex items-center justify-center gap-2 text-sm text-lavender-600 hover:text-lavender-700",
+  ghost: "btn-ghost",
+  danger: "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-[22px] font-semibold text-sm transition-all duration-200 bg-[linear-gradient(135deg,#f8a5a5_0%,#f4b6b6_100%)] text-white shadow-[0_10px_30px_rgba(248,165,165,0.25)] hover:-translate-y-0.5",
+  blossom: "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-[22px] font-semibold text-sm transition-all duration-200 bg-[linear-gradient(135deg,var(--primary-lavender)_0%,var(--accent)_100%)] text-white shadow-[0_12px_32px_rgba(142,110,220,0.24)] hover:-translate-y-0.5",
+  link: "inline-flex items-center justify-center gap-2 text-sm font-semibold text-[color:var(--accent)] hover:text-[color:var(--text-primary)]",
 };
 
 const sizeStyles: Record<Size, string> = {
   sm: "!px-3 !py-1.5 !text-xs",
   md: "",
   lg: "!px-7 !py-3.5 !text-base",
+  icon: "!p-2 !rounded-full",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { Send } from "lucide-react";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -38,15 +40,14 @@ export function CommentSection({ postId, onCommentAdded }: { postId: string; onC
     setIsSubmitting(true);
     try {
       const authorData = { uid: user.uid, username: profile.username, displayName: profile.displayName, photoURL: profile.photoURL };
-      const newComment = await addComment(postId, user.uid, authorData, commentContent.trim());
+      const createdComment = await addComment(postId, user.uid, authorData, commentContent.trim());
 
       // Optimistically add the new comment
-      setComments((prev) => [...prev, newComment]);
+      setComments((prev) => [...prev, createdComment]);
       setCommentContent("");
       onCommentAdded(); // Notify parent to increment count
     } catch (error) {
       console.error("Failed to add comment:", error);
-      // Optionally show an error to the user
     } finally {
       setIsSubmitting(false);
     }
@@ -54,9 +55,7 @@ export function CommentSection({ postId, onCommentAdded }: { postId: string; onC
 
   return (
     <div className="pt-4 mt-4 border-t" style={{ borderColor: "var(--border-default)" }}>
-      {loading ? (
-        <PostSkeleton />
-      ) : (
+      {loading ? <PostSkeleton /> : (
         <div className="space-y-4">
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-3">
@@ -77,13 +76,7 @@ export function CommentSection({ postId, onCommentAdded }: { postId: string; onC
         <div className="flex items-start gap-3 mt-4">
           <Avatar src={profile.photoURL} name={profile.displayName} size="sm" />
           <div className="flex-1">
-            <Textarea
-              value={commentContent}
-              onChange={(e) => setCommentContent(e.target.value)}
-              placeholder="Write a comment..."
-              rows={1}
-              className="text-sm"
-            />
+            <Textarea value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="Write a comment..." rows={1} className="text-sm" />
             <div className="flex justify-end mt-2">
               <Button onClick={handleAddComment} loading={isSubmitting} disabled={!commentContent.trim()} size="sm" rightIcon={<Send className="w-3.5 h-3.5" />}>Post</Button>
             </div>

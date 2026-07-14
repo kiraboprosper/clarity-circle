@@ -5,6 +5,9 @@ import { auth } from "../firebase/config";
 import { getUserProfile } from "../firebase/users";
 import { recordDailyLogin } from "../firebase/users";
 import type { UserProfile } from "../types";
+import { waitForAuthState } from "./authBootstrap";
+import { buildFallbackProfile } from "../firebase/fallbacks";
+import { getDemoAuthState } from "./demoAuth";
 
 interface AuthContextValue {
   user: User | null;
@@ -26,9 +29,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfile = async (u: User) => {
-    const p = await getUserProfile(u.uid);
-    setProfile(p);
-    if (p) await recordDailyLogin(u.uid);
+    try {
+      const p = await getUserProfile(u.uid);
+      if (p) {
+        setProfile(p);
+        await recordDailyLogin(u.uid);
+        return;
+      }
+
+      const fallbackProfile = buildFallbackProfile(u);
+      setProfile(fallbackProfile);
+      await recordDailyLogin(u.uid).catch(() => undefined);
+    } catch (error) {
+      console.warn("Falling back to local profile state:", error);
+      setProfile(buildFallbackProfile(u));
+    }
   };
 
   const refreshProfile = async () => {
@@ -36,16 +51,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (u) {
-        await loadProfile(u);
-      } else {
-        setProfile(null);
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      const demoState = getDemoAuthState();
+      if (demoState.enabled) {
+        if (isMounted) {
+          setUser(demoState.user);
+          setProfile(demoState.profile);
+          setLoading(false);
+        }
+        return;
       }
-      setLoading(false);
-    });
-    return unsub;
+
+      try {
+        const initialUser = await waitForAuthState(auth, onAuthStateChanged, 4000);
+        if (!isMounted) return;
+
+        setUser(initialUser);
+        if (initialUser) {
+          try {
+            await loadProfile(initialUser);
+          } catch (error) {
+            console.warn("Unable to load profile during auth bootstrap:", error);
+            setProfile(null);
+          }
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.warn("Auth bootstrap failed:", error);
+        if (isMounted) {
+          setUser(null);
+          setProfile(null);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    void initializeAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

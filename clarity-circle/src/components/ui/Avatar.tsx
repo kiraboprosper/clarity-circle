@@ -49,13 +49,13 @@ export function Avatar({ src, name, size = "md", className, verified }: AvatarPr
           src={src}
           alt={name}
           fill
-          className="rounded-full object-cover"
+          className="rounded-full object-cover ring-2 ring-white/80 shadow-[0_8px_28px_rgba(142,110,220,0.18)]"
           sizes="80px"
         />
       ) : (
         <div
           className={cn(
-            "rounded-full flex items-center justify-center font-semibold text-white bg-gradient-to-br",
+            "rounded-full flex items-center justify-center font-semibold text-white bg-gradient-to-br ring-2 ring-white/80 shadow-[0_8px_28px_rgba(142,110,220,0.18)]",
             wh,
             text,
             getGradient(name)
@@ -67,7 +67,7 @@ export function Avatar({ src, name, size = "md", className, verified }: AvatarPr
       {verified && (
         <span
           className={cn(
-            "absolute bottom-0 right-0 rounded-full bg-lavender-500 border-white flex items-center justify-center",
+            "absolute bottom-0 right-0 rounded-full bg-[linear-gradient(135deg,var(--accent),var(--primary-lavender))] border-2 border-white flex items-center justify-center shadow-lg",
             badge
           )}
         >

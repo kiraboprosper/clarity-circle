@@ -9,8 +9,13 @@ import { awardPointsSecure } from "./functions";
 import type { UserProfile } from "../types";
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-  const snap = await getDoc(doc(db, COLLECTIONS.USERS, uid));
-  return snap.exists() ? (snap.data() as UserProfile) : null;
+  try {
+    const snap = await getDoc(doc(db, COLLECTIONS.USERS, uid));
+    return snap.exists() ? (snap.data() as UserProfile) : null;
+  } catch (error) {
+    console.warn("Firestore profile lookup failed, returning null:", error);
+    return null;
+  }
 }
 
 export async function updateUserProfile(
@@ -61,12 +66,16 @@ export async function blockUser(currentUserId: string, targetUserId: string): Pr
 }
 
 export async function recordDailyLogin(uid: string): Promise<void> {
-  const today = new Date().toISOString().split("T")[0];
-  const loginRef = doc(db, `${COLLECTIONS.USERS}/${uid}/loginDates/${today}`);
-  const snap = await getDoc(loginRef);
-  if (!snap.exists()) {
-    await setDoc(loginRef, { date: today, recordedAt: serverTimestamp() });
-    await awardPointsSecure({ amount: 5, type: "daily_login", description: "Daily login bonus", referenceId: today });
-    await updateDoc(doc(db, COLLECTIONS.USERS, uid), { lastActiveAt: serverTimestamp() });
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const loginRef = doc(db, `${COLLECTIONS.USERS}/${uid}/loginDates/${today}`);
+    const snap = await getDoc(loginRef);
+    if (!snap.exists()) {
+      await setDoc(loginRef, { date: today, recordedAt: serverTimestamp() });
+      await awardPointsSecure({ amount: 5, type: "daily_login", description: "Daily login bonus", referenceId: today });
+      await updateDoc(doc(db, COLLECTIONS.USERS, uid), { lastActiveAt: serverTimestamp() });
+    }
+  } catch (error) {
+    console.warn("Daily login update skipped:", error);
   }
 }

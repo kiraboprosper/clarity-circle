@@ -42,6 +42,10 @@ export default function LoginPage() {
     }
   };
 
+  const handleDemo = () => {
+    router.replace("/feed?demoAuth=1");
+  };
+
   return (
     <Card className="animate-slide-up">
       <h2 className="text-xl font-bold mb-6 text-center" style={{ color: "var(--text-primary)" }}>Welcome back 🌸</h2>
@@ -84,6 +88,10 @@ export default function LoginPage() {
 
         <Button onClick={handleSubmit} loading={loading} className="w-full" size="lg">
           Sign in
+        </Button>
+
+        <Button variant="secondary" onClick={handleDemo} className="w-full" size="lg">
+          Try demo mode
         </Button>
 
         <div className="flex items-center gap-3">

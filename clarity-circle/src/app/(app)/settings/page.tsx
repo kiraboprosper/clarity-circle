@@ -1,28 +1,20 @@
 ﻿"use client";
 import { useState } from "react";
-import { User, Bell, Shield, Palette, CreditCard, LogOut, ChevronRight, Moon, Sun, Monitor } from "lucide-react";
+import { User, Bell, Shield, Palette, CreditCard, LogOut, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/lib/context/AuthContext";
-import { useTheme } from "@/lib/context/ThemeContext";
 import { signOut } from "@/lib/firebase/auth";
 import { updateUserProfile } from "@/lib/firebase/users";
 import { useRouter } from "next/navigation";
-import type { NotificationSettings, ThemePreference } from "@/lib/types";
+import type { NotificationSettings } from "@/lib/types";
 import { RevenueCatPlans } from "@/components/subscription/RevenueCatPlans";
-
-const THEME_OPTIONS: { value: ThemePreference; icon: typeof Sun; label: string }[] = [
-  { value: "light", icon: Sun, label: "Light" },
-  { value: "dark", icon: Moon, label: "Dark" },
-  { value: "system", icon: Monitor, label: "System" },
-];
 
 export default function SettingsPage() {
   const { user, profile, refreshProfile } = useAuth();
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [section, setSection] = useState<"main" | "profile" | "notifications" | "privacy" | "theme" | "subscription">("main");
   const [form, setForm] = useState({ displayName: profile?.displayName || "", bio: profile?.bio || "" });
@@ -56,7 +48,7 @@ export default function SettingsPage() {
   if (section !== "main") {
     return <div className="section-container py-6 max-w-xl space-y-5"><button onClick={() => setSection("main")} className="btn-ghost flex items-center gap-2 -ml-2">Back to Settings</button>
       {section === "profile" && <Card className="space-y-4"><h2 className="font-bold text-lg" style={{ color: "var(--text-primary)" }}>Edit Profile</h2>{profile && <div className="flex items-center gap-4"><Avatar src={profile.photoURL} name={profile.displayName} size="lg" /></div>}<Input label="Display name" value={form.displayName} onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))} /><Textarea label="Bio" value={form.bio} rows={3} placeholder="Tell the community who you are..." onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} /><Button onClick={() => saveAndFlash({ displayName: form.displayName, bio: form.bio })} loading={saving} className="w-full">{saved ? "Saved" : "Save changes"}</Button></Card>}
-      {section === "theme" && <Card className="space-y-4"><h2 className="font-bold text-lg" style={{ color: "var(--text-primary)" }}>Appearance</h2><div className="grid grid-cols-3 gap-3">{THEME_OPTIONS.map(({ value, icon: Icon, label }) => <button key={value} onClick={() => { setTheme(value); void saveAndFlash({ theme: value }); }} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${theme === value ? "border-lavender-500 bg-lavender-50 dark:bg-lavender-900/20" : "border-transparent"}`} style={theme !== value ? { backgroundColor: "var(--bg-subtle)" } : {}}><Icon className="w-6 h-6" /><span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</span></button>)}</div></Card>}
+      {section === "theme" && <Card className="space-y-4"><h2 className="font-bold text-lg" style={{ color: "var(--text-primary)" }}>Appearance</h2><p className="text-sm" style={{ color: "var(--text-secondary)" }}>This experience stays in the calm, light lavender palette for a softer feel.</p></Card>}
       {section === "notifications" && <Card className="space-y-4"><h2 className="font-bold text-lg" style={{ color: "var(--text-primary)" }}>Notifications</h2>{([{ key: "likes", label: "Likes", desc: "When someone likes your post" }, { key: "comments", label: "Comments", desc: "When someone comments" }, { key: "follows", label: "New followers", desc: "When someone follows you" }, { key: "directMessages", label: "Direct messages", desc: "When you receive a message" }, { key: "challenges", label: "Challenge updates", desc: "Daily challenge reminders" }, { key: "communityUpdates", label: "Community updates", desc: "News from Clarity Circle" }] as const).map(({ key, label, desc }) => <SettingToggle key={key} label={label} desc={desc} checked={Boolean(profile?.notificationSettings?.[key])} onChange={(checked) => toggleNotification(key, checked)} />)}</Card>}
       {section === "privacy" && <Card className="space-y-4"><h2 className="font-bold text-lg" style={{ color: "var(--text-primary)" }}>Privacy & Safety</h2><SettingToggle label="Private account" desc="Only approved followers see your profile details" checked={Boolean(profile?.isPrivate)} onChange={(checked) => saveAndFlash({ isPrivate: checked })} /></Card>}
       {section === "subscription" && <RevenueCatPlans />}

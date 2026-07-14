@@ -7,6 +7,11 @@ import { getFirestore } from "firebase/firestore";
 import type { FirebaseStorage } from "firebase/storage";
 import { getStorage } from "firebase/storage";
 
+let firebaseAppInstance: FirebaseApp | null = null;
+let firebaseAuthInstance: Auth | null = null;
+let firebaseDbInstance: Firestore | null = null;
+let firebaseStorageInstance: FirebaseStorage | null = null;
+
 const firebaseConfig = {
   apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -30,94 +35,39 @@ function ensureFirebaseConfig() {
 }
 
 export function getFirebaseApp(): FirebaseApp {
-  if (getApps().length) return getApp();
+  if (firebaseAppInstance) return firebaseAppInstance;
+  if (getApps().length) {
+    firebaseAppInstance = getApp();
+    return firebaseAppInstance;
+  }
   ensureFirebaseConfig();
-  return initializeApp(firebaseConfig);
+  firebaseAppInstance = initializeApp(firebaseConfig);
+  return firebaseAppInstance;
 }
 
-function getFirebaseAuth(): Auth {
-  return getAuth(getFirebaseApp());
+export function getFirebaseAuth(): Auth {
+  if (!firebaseAuthInstance) {
+    firebaseAuthInstance = getAuth(getFirebaseApp());
+  }
+  return firebaseAuthInstance;
 }
 
-function getFirestoreDb(): Firestore {
-  return getFirestore(getFirebaseApp());
+export function getFirestoreDb(): Firestore {
+  if (!firebaseDbInstance) {
+    firebaseDbInstance = getFirestore(getFirebaseApp());
+  }
+  return firebaseDbInstance;
 }
 
-function getFirebaseStorage(): FirebaseStorage {
-  return getStorage(getFirebaseApp());
+export function getFirebaseStorage(): FirebaseStorage {
+  if (!firebaseStorageInstance) {
+    firebaseStorageInstance = getStorage(getFirebaseApp());
+  }
+  return firebaseStorageInstance;
 }
 
-export const auth = new Proxy({} as Auth, {
-  get(_, prop) {
-    return Reflect.get(getFirebaseAuth(), prop);
-  },
-  set(_, prop, value) {
-    return Reflect.set(getFirebaseAuth() as any, prop, value);
-  },
-  has(_, prop) {
-    return prop in getFirebaseAuth();
-  },
-  getOwnPropertyDescriptor(_, prop) {
-    return Object.getOwnPropertyDescriptor(getFirebaseAuth() as any, prop);
-  },
-  ownKeys() {
-    return Reflect.ownKeys(getFirebaseAuth());
-  },
-});
-
-export const db = new Proxy({} as Firestore, {
-  get(_, prop) {
-    return Reflect.get(getFirestoreDb(), prop);
-  },
-  set(_, prop, value) {
-    return Reflect.set(getFirestoreDb() as any, prop, value);
-  },
-  has(_, prop) {
-    return prop in getFirestoreDb();
-  },
-  getOwnPropertyDescriptor(_, prop) {
-    return Object.getOwnPropertyDescriptor(getFirestoreDb() as any, prop);
-  },
-  ownKeys() {
-    return Reflect.ownKeys(getFirestoreDb());
-  },
-});
-
-export const storage = new Proxy({} as FirebaseStorage, {
-  get(_, prop) {
-    return Reflect.get(getFirebaseStorage(), prop);
-  },
-  set(_, prop, value) {
-    return Reflect.set(getFirebaseStorage() as any, prop, value);
-  },
-  has(_, prop) {
-    return prop in getFirebaseStorage();
-  },
-  getOwnPropertyDescriptor(_, prop) {
-    return Object.getOwnPropertyDescriptor(getFirebaseStorage() as any, prop);
-  },
-  ownKeys() {
-    return Reflect.ownKeys(getFirebaseStorage());
-  },
-});
-
-const appProxy = new Proxy({} as FirebaseApp, {
-  get(_, prop) {
-    return Reflect.get(getFirebaseApp(), prop);
-  },
-  set(_, prop, value) {
-    return Reflect.set(getFirebaseApp() as any, prop, value);
-  },
-  has(_, prop) {
-    return prop in getFirebaseApp();
-  },
-  getOwnPropertyDescriptor(_, prop) {
-    return Object.getOwnPropertyDescriptor(getFirebaseApp() as any, prop);
-  },
-  ownKeys() {
-    return Reflect.ownKeys(getFirebaseApp());
-  },
-});
-
-export const app = appProxy;
-export default appProxy;
+export const auth = getFirebaseAuth();
+export const db = getFirestoreDb();
+export const storage = getFirebaseStorage();
+export const app = getFirebaseApp();
+export default app;
